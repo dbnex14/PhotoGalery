@@ -33,6 +33,7 @@ public class ThumbnailDownloader<Token> extends HandlerThread {
     //Listener interface to communicate the responses with and do UI work with the returniing Bitmaps.
     Listener<Token> mListener;
     public interface Listener<Token>{
+        //void onThumbnailDownloaded(Token token, String url, Bitmap thumbnail); //CHALLANGE, Ch27
         void onThumbnailDownloaded(Token token, Bitmap thumbnail);
     }
     public void setListener(Listener<Token> listener){
@@ -98,6 +99,7 @@ public class ThumbnailDownloader<Token> extends HandlerThread {
                         return;
                     }
                     requestMap.remove(token);
+                    //mListener.onThumbnailDownloaded(token, url, bitmap); //CHALLANGE, Ch27
                     mListener.onThumbnailDownloaded(token, bitmap);
                 }
             });
