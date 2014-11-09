@@ -22,6 +22,7 @@ import java.util.ArrayList;
 public class FlickrFetchr {
 
     public static final String TAG = "FlickrFetchr";
+    public static final String PREF_SEARCH_QUERY = "searchQuery"; //key for SharedPreference value saved in onNewIntent override in PhotoGaleryActivity
 
     private static final String ENDPOINT = "https://api.flickr.com/services/rest/";  //flickr rest service
     private static final String API_KEY = "d7301a53e45b6ad92997e36d14fb6850"; //your flickr api key
@@ -30,7 +31,6 @@ public class FlickrFetchr {
     private static final String PARAM_EXTRAS = "extras"; //
     private static final String EXTRA_SMALL_URL = "url_s";  //this tells Flickr to include URL for the small version of the picture if available
     private static final String PARAM_TEXT = "text"; //text query parameter passed to flicker.photos.search
-
     private static final String XML_PHOTO = "photo"; //constant specifying name of photo XML element
 
     byte[] getUrlBytes(String urlSpec) throws IOException{

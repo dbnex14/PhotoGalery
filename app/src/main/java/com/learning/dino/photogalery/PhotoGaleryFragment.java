@@ -1,9 +1,17 @@
 package com.learning.dino.photogalery;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.app.SearchManager;
+import android.app.SearchableInfo;
+import android.content.ComponentName;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.util.LruCache;
@@ -16,6 +24,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.SearchView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -31,12 +41,17 @@ public class PhotoGaleryFragment extends Fragment {
     ThumbnailDownloader<ImageView> mThumbnailThread;  //this is a background HandlerThread
     private LruCache<String, Bitmap> mMemoryCache; //LRU cashing
 
+    public void updateItems(){
+        new FetchItemsTask().execute();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setRetainInstance(true);  //retain the fragment
         setHasOptionsMenu(true); //hookup options menu callbacks
-        new FetchItemsTask().execute();
+        updateItems();
+        //new FetchItemsTask().execute();
 
         //CHALLANGE, Ch27 - Get max VM memory.  Exceedint this amount will throw an OutOfMemory exception.
         //final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
@@ -87,9 +102,43 @@ public class PhotoGaleryFragment extends Fragment {
     }
 
     @Override
+    @TargetApi(11)
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.fragment_photo_gallery, menu);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB){
+            //Pull out the SearchView
+            MenuItem searchItem = menu.findItem(R.id.menu_item_search);
+            SearchView searchView = (SearchView)searchItem.getActionView();
+
+            //Get the data from our searchable.xml as a SearchableInfo
+            SearchManager sm = (SearchManager)getActivity().getSystemService(Context.SEARCH_SERVICE);
+            ComponentName cn = getActivity().getComponentName();
+            SearchableInfo searchInfo = sm.getSearchableInfo(cn);
+            searchView.setSearchableInfo(searchInfo);
+            //CHALLANGE Ch28.
+            // This will add 2 new icons to your SearchView (X and >, for delete search, and search).
+            // Double click on X will return to the original search (clear SharedPreference persisted
+            // search query) ->
+            searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+                @Override
+                public boolean onClose() {
+                    Log.i(TAG, "onClose() called on our SearchView");
+
+                    //Update GridView with a normal fetch search result (i.e. remove search results).
+                    //We have to remove our persisted query, then updateItems() to query Thumbnails again.
+                    PreferenceManager.getDefaultSharedPreferences(getActivity())
+                            .edit()
+                            .putString(FlickrFetchr.PREF_SEARCH_QUERY, null)
+                            .commit();
+                    updateItems();
+                    return false;
+                }
+            });
+            searchView.setSubmitButtonEnabled(true);
+            //CHALLANGE Ch28.<-
+        }
     }
 
     @Override
@@ -99,6 +148,12 @@ public class PhotoGaleryFragment extends Fragment {
                 getActivity().onSearchRequested(); //search button implementation but you must make activity an searchable activity for this to work
                 return true;
             case R.id.menu_item_clear:
+                //cancel search query from shared preferences
+                PreferenceManager.getDefaultSharedPreferences(getActivity())
+                        .edit()
+                        .putString(FlickrFetchr.PREF_SEARCH_QUERY, null)
+                        .commit();
+                updateItems();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -126,7 +181,14 @@ public class PhotoGaleryFragment extends Fragment {
         @Override
         //protected Void doInBackground(Void... params){
         protected ArrayList<GaleryItem> doInBackground(Void... params) {
-            String query = null; //"android"; //Just for testing
+            //String query = null;
+            //String query = "android"; //Just for testing
+            Activity a = getActivity();
+            if (a == null){
+                return new ArrayList<GaleryItem>();
+            }
+
+            String query = PreferenceManager.getDefaultSharedPreferences(a).getString(FlickrFetchr.PREF_SEARCH_QUERY, null);
             if (query != null){
                 return new FlickrFetchr().search(query);
             }else{
@@ -147,6 +209,10 @@ public class PhotoGaleryFragment extends Fragment {
         protected void onPostExecute(ArrayList<GaleryItem> items){
             mItems = items;
             setupAdapter();
+            //CHALLANGE, Ch28.->
+            String resultSetSize = "Query returned " + mItems.size() + " result(s).";
+            Toast.makeText(getActivity(), resultSetSize, Toast.LENGTH_SHORT).show();
+            //CHALLANGE, Ch28.<-
         }
     }
 
