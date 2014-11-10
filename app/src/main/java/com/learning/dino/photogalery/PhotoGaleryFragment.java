@@ -53,6 +53,12 @@ public class PhotoGaleryFragment extends Fragment {
         updateItems();
         //new FetchItemsTask().execute();
 
+        // Start PollService
+        //Intent i = new Intent(getActivity(), PollService.class);
+        //getActivity().startService(i);
+        //Moved to menu item
+        //PollService.setServiceAlarm(getActivity(), true);
+
         //CHALLANGE, Ch27 - Get max VM memory.  Exceedint this amount will throw an OutOfMemory exception.
         //final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         //Use 1/5 of available memory for this cache
@@ -155,8 +161,37 @@ public class PhotoGaleryFragment extends Fragment {
                         .commit();
                 updateItems();
                 return true;
+            case R.id.menu_item_toggle_polling:
+                //toggle service polling
+                boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+                PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+
+                //We need to do this on post 3.0 devices to tell action bar to update
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB){
+                    getActivity().invalidateOptionsMenu();
+                }
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu){
+        //This method is called every time a menu needs to be configured so it is ideal place
+        //to put the code that changes the text of the menu item based on the state of application.
+        //In pre 3.0 devices, ths method is called every time the menu is displayed which ensures
+        //that your menu item always shows the right text.
+        //However, on post 3.0 devices, this is not enought since ActionBar does not automatically
+        //update itselt.  You have to manually tell it to call onPrepareOptionsMenu() and refresh
+        //its items by calling Activity.invalidateOptionsMenu()
+        super.onPrepareOptionsMenu(menu);
+
+        MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
+        if (PollService.isServiceAlarmOn(getActivity())){
+            toggleItem.setTitle(R.string.stop_polling);
+        }else{
+            toggleItem.setTitle(R.string.start_polling);
         }
     }
 

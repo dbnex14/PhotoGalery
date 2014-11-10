@@ -23,6 +23,7 @@ public class FlickrFetchr {
 
     public static final String TAG = "FlickrFetchr";
     public static final String PREF_SEARCH_QUERY = "searchQuery"; //key for SharedPreference value saved in onNewIntent override in PhotoGaleryActivity
+    public static final String PREF_LAST_RESULT_ID = "lastResultId"; //Since your service will be polling for new result, it needs to know last fetched result
 
     private static final String ENDPOINT = "https://api.flickr.com/services/rest/";  //flickr rest service
     private static final String API_KEY = "d7301a53e45b6ad92997e36d14fb6850"; //your flickr api key
