@@ -1,9 +1,9 @@
 package com.learning.dino.photogalery;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -25,6 +25,10 @@ public class PollService extends IntentService {
     private static final String TAG = "PollService";
     private static final int POLL_INTERVAL = 1000 * 15; //15 seconds
     //private static final int POLL_INTERVAL = 1000 * 60 * 5; //5 minutes
+
+    public static final String PREF_IS_ALARM_ON = "isAlarmOn";  //used by BroadcastReceiver StartupReceiver
+    public static final String ACTION_SHOW_NOTIFICATION = "com.learning.dino.photogalery.SHOW_NOTIFICATION";
+    public static final String PERM_PRIVATE = "com.learning.dino.photogalery.PRIVATE";
 
     public PollService(){
         super(TAG);
@@ -74,7 +78,7 @@ public class PollService extends IntentService {
         //3. If there are results, grab the first one
         String resultId = items.get(0).getId();
 
-        //4. Check to seee if it is different from the last result Id
+        //4. Check to see if it is different from the last result Id
         if (!resultId.equals(lastResultId)){
             Log.i(TAG, "Got a new result: " + resultId);
 
@@ -89,8 +93,15 @@ public class PollService extends IntentService {
                     .setContentIntent(pi)
                     .setAutoCancel(true)
                     .build();
-            NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-            nm.notify(0, notification);
+            //NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+            //nm.notify(0, notification);
+
+            //Send your own broadcast intent which we will then receive to prevent notification showing
+            //even if PhotoGalery is running.  We want PhotoGalery to receive the intent only while alive.
+            //sendBroadcast(new Intent(ACTION_SHOW_NOTIFICATION), PERM_PRIVATE);
+
+            showBackgroundNotification(0, notification);
+
         }else{
             Log.i(TAG, "Got an old result: " + resultId);
         }
@@ -99,6 +110,14 @@ public class PollService extends IntentService {
         prefs.edit()
                 .putString(FlickrFetchr.PREF_LAST_RESULT_ID, resultId)
                 .commit();
+    }
+
+    void showBackgroundNotification(int requestCode, Notification notification){
+        Intent i = new Intent(ACTION_SHOW_NOTIFICATION);
+        i.putExtra("REQUEST_CODE", requestCode);
+        i.putExtra("NOTIFICATION", notification);
+
+        sendOrderedBroadcast(i, PERM_PRIVATE, null, null, Activity.RESULT_OK, null, null);
     }
 
     public static void setServiceAlarm(Context context, boolean isOn){
@@ -112,6 +131,11 @@ public class PollService extends IntentService {
             am.cancel(pi);
             pi.cancel();
         }
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putBoolean(PollService.PREF_IS_ALARM_ON, isOn)
+                .commit();
     }
 
     //Check if alarm is on or not

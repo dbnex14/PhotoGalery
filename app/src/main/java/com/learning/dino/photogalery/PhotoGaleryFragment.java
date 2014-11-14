@@ -12,7 +12,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.util.LruCache;
 import android.view.LayoutInflater;
@@ -32,7 +31,8 @@ import java.util.ArrayList;
 /**
  * Created by dbulj on 26/10/2014.
  */
-public class PhotoGaleryFragment extends Fragment {
+//public class PhotoGaleryFragment extends Fragment {
+public class PhotoGaleryFragment extends VisibleFragment {
 
     private static final String TAG = "PhotoGaleryFragment";
 
